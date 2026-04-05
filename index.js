@@ -8,7 +8,6 @@ import cloudinary from 'cloudinary'
 import cors from 'cors'
 import token from './src/controller/saveToken.js'
 import notification from './src/controller/send-notification.js'
-import serviceAccount from './src/firebase/serviceAccountKey.js'
 import admin from 'firebase-admin'
 import PaymentRouter from './src/routes/payment.router.js';
 
