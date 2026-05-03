@@ -30,9 +30,9 @@ app.use(cors({
 }))
 
 cloudinary.config({
-  cloud_name: "dcfw2asl6",
-  api_key: "544883643937728",
-  api_secret: "tbvWfddTAQQjKgWcmPGtr-rfM7c"
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 })
 
 app.use('/api/v1/user', user);
