@@ -8,6 +8,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 firebase/serviceAccountKey.js
+error.log*
+last_error.txt
 
 # ------------------------------
 # Environment variables
