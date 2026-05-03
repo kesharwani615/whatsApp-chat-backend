@@ -4,20 +4,18 @@ import { Payment } from "../models/Payement.modal.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-console.log("Stripe Key:",process.env.STRIPE_SECRET_KEY);
+console.log("Stripe Key:", process.env.STRIPE_SECRET_KEY);
 
 export const createPaymentIntent = asyncHandler(async (req, res) => {
- const { amount } = req.body;
+  const { amount } = req.body;
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // convert to paise
-      currency: "inr",
-      payment_method_types: ["card"]
-    });
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount * 100, // convert to paise
+    currency: "inr",
+    payment_method_types: ["card"]
+  });
 
-    res.send({
-      clientSecret: paymentIntent.client_secret
-    });
+  res.json({ clientSecret: paymentIntent.client_secret });
 });
 
 export const savePayment = asyncHandler(async (req, res) => {

@@ -14,13 +14,13 @@ export const signup = asyncHandler(async (req, res) => {
       (item) => item.trim() === ""
     )
   ) {
-       errorHandler(res,400,false,"Please enter all fields");
+    errorHandler(res, 400, false, "Please enter all fields");
   }
 
   const existedAccount = await user.findOne({ email: email });
 
   if (existedAccount) {
-  return errorHandler(res,400,false,"user already exist!")
+    return errorHandler(res, 400, false, "user already exist!")
   }
 
   const newUser = new user({
@@ -34,9 +34,9 @@ export const signup = asyncHandler(async (req, res) => {
   const saveUser = await newUser.save();
   console.log(saveUser);
 
-return res.status(201).json(
+  return res.status(201).json(
     new ApiResponse(201, saveUser, "user created successfully")
-);
+  );
   // res.status(201).json({success:true, msg: "user created successfully",user:saveUser});
 });
 
@@ -47,11 +47,11 @@ const generateToken = async (userId) => {
     const accessToken = await existedUser.generateAccessToken();
     const refreshToken = await existedUser.generateRefreshToken();
 
-    existedUser.refreshToken= refreshToken;
+    existedUser.refreshToken = refreshToken;
 
-    await existedUser.save({validateBeforeSave:false});
+    await existedUser.save({ validateBeforeSave: false });
 
-    return( { accessToken, refreshToken ,existedUser});
+    return ({ accessToken, refreshToken, existedUser });
 
   } catch (error) {
     throw new ApiError(
@@ -79,58 +79,58 @@ export const login = asyncHandler(async (req, res) => {
   const PasswordCorrect = await getUser.isPasswordCorrect(password);
 
   if (!PasswordCorrect) {
-    throw new ApiError(400,false,"User credential are worng!");
+    throw new ApiError(400, false, "User credential are worng!");
   }
 
-  const { accessToken, refreshToken,existedUser} =await generateToken(getUser._id);
+  const { accessToken, refreshToken, existedUser } = await generateToken(getUser._id);
 
-const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === "production";
 
-const option = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: "lax",
-};
+  const option = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+  };
 
   return res
     .status(200)
     .cookie("whatsApp", accessToken, option)
     .json(
       new ApiResponse(200, {
-      user: existedUser,
-      accessToken,
-      refreshToken,
-    }, "user logged in successfully")
+        user: existedUser,
+        accessToken,
+        refreshToken,
+      }, "user logged in successfully")
     );
 });
 
-export const uploadImage = asyncHandler(async(req,res)=>{
+export const uploadImage = asyncHandler(async (req, res) => {
 
   const file = req.files[0]?.path
 
   console.log(file);
   const uploadedOnCloud = await cloudinary.uploader.upload(file);
 
-  if(!uploadedOnCloud){
-    throw new ApiError("500","something went worng while uploading image on bucket!")
+  if (!uploadedOnCloud) {
+    throw new ApiError("500", "something went worng while uploading image on bucket!")
   }
 
   return uploadedOnCloud?.url;
 });
 
-export const editProfile = asyncHandler(async(req,res)=>{
-  const {username,mobileNumber,name} = req.body;
+export const editProfile = asyncHandler(async (req, res) => {
+  const { username, mobileNumber, name } = req.body;
 
-  const {id} = req.params;
+  const { id } = req.params;
 
-  if(!mongoose.Types.ObjectId.isValid(id)){
-      throw new ApiError(404,"Please provide valid user id");
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(404, "Please provide valid user id");
   }
 
   const existedUser = await user.findById(id);
 
-  if(!existedUser){
-    throw new ApiError(404,"User Not Found");
+  if (!existedUser) {
+    throw new ApiError(404, "User Not Found");
   }
 
   existedUser.name = name || existedUser.name;
