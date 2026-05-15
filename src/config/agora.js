@@ -8,7 +8,12 @@ export const generateToken = (loggedInUserId, channelName) => {
 
     // const channelName = generateChannelName(loggedInUserId, receiverUserId);
 
-    const uid = Number(loggedInUserId);
+    const uid = 0;
+
+    console.log("uid", uid);
+    console.log("channelName", channelName);
+    console.log("appID", appID);
+    console.log("appCertificate", appCertificate);
 
     const role = RtcRole.PUBLISHER;
 
