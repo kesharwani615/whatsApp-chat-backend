@@ -11,7 +11,7 @@ router.post("/save-token", async (req, res) => {
     }
 
     // Check if token already exists
-    const existing = await FcmToken.findOne({ token });
+    const existing = await FCMToken.findOne({ token });
     if (!existing) {
       await FCMToken.create({ token });
     }
