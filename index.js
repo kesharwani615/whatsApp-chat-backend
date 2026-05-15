@@ -12,7 +12,9 @@ import PaymentRouter from './src/routes/payment.router.js';
 // import "./src/config/redis.js";
 import agoraRoutes from "./src/routes/agora.router.js";
 
-const PORT = process.env.PORT || 1000;
+const PORT = process.env.PORT || 4000;
+
+console.log(PORT)
 
 // ✅ THIS IS CRITICAL
 app.post(
