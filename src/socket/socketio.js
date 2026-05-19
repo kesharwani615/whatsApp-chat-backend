@@ -33,6 +33,7 @@ io.on("connection", async (socket) => {
     user = await checkValidToken(token);
     console.log("userValid", user);
     userSocketMap.set(user._id.toString(), socket.id);
+    io.emit("allOnline-users", Array.from(userSocketMap.keys()));
   } catch (error) {
     console.error("Socket authentication error:", error.message);
     socket.emit("error", { message: "Unauthorized - Invalid or No Token Provided" });
@@ -91,6 +92,14 @@ io.on("connection", async (socket) => {
       receiverId: roomId,
       message: usermessage,
     });
+
+    const receiverSocket = userSocketMap.get(roomId);
+    if (receiverSocket) {
+      await message.findByIdAndUpdate(createdMessage._id, { status: "delivered" });
+    } else if (createdMessage._id) {
+      await message.findByIdAndUpdate(createdMessage._id, { status: "sent" });
+    }
+
     console.log("createdMessage", createdMessage);
     if (!existedConversation?.message) {
       existedConversation.message = [createdMessage?._id];
@@ -228,12 +237,28 @@ io.on("connection", async (socket) => {
     socket.to(call.roomId).emit("callEnded");
   });
 
+  socket.on("typing", ({ roomId, userName }) => {
+    socket.to(roomId).emit("show_typing", {
+      userName,
+      message: `${userName} is typing...`
+    });
+  });
 
+  socket.on("stop_typing", ({ roomId, userName }) => {
+    socket.to(roomId).emit("hide_typing", {
+      userName,
+    });
+  });
 
   socket.on("disconnect", () => {
-    userSocketMap.delete(user._id.toString());
+    if (user?._id) {
+      userSocketMap.delete(user._id.toString());
+      // Broadcast the updated online list to all remaining connected clients
+      io.emit("allOnline-users", Array.from(userSocketMap.keys()));
+    }
     console.log("a user disconnected", socket.id);
   });
+
 
 });
 

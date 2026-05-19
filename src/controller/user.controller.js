@@ -144,3 +144,29 @@ export const editProfile = asyncHandler(async (req, res) => {
     user: updatedUser,
   });
 })
+
+export const logout = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const existedUser = await user.findById(id);
+
+  if (!existedUser) {
+    throw new ApiError(404, "User Not Found");
+  }
+
+  existedUser.refreshToken = "";
+
+  const updatedUser = await existedUser.save({ validateBeforeSave: false });
+
+  const isProduction = process.env.NODE_ENV === "production";
+
+  const option = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+  };
+
+  res.status(200)
+    .clearCookie("whatsApp", option)
+    .json(new ApiResponse(200, updatedUser, "user logged out successfully"));
+});

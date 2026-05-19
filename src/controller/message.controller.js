@@ -5,6 +5,7 @@ import user from "../models/user.modal.js";
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { errorHandler } from "../utils/errorResponseHandler.js";
+import { twouserconversation } from "../models/conversation.modal.js";
 
 export const createGroup = asyncHandler(async (req, res) => {
   const { groupname, participant } = req.body;
@@ -64,80 +65,80 @@ export const getalluser = asyncHandler(async (req, res) => {
     {
       $match: { _id: { $ne: new mongoose.Types.ObjectId(loggedInUser?._id) } },
     },
- {
-    $project: {
-      _id: 1,
-      name: 1,          
-      email: 1,         
-      username: 1,      
-      mobileNumber: 1,  
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        username: 1,
+        mobileNumber: 1,
+      }
     }
-  }
   ]);
 
   res.status(200).json({ data: alluser });
 });
 
-export const getallgroup = asyncHandler(async(req,res)=>{
-     const loggedInUser = req.user;
+export const getallgroup = asyncHandler(async (req, res) => {
+  const loggedInUser = req.user;
 
-     const allgroup = await groupconversation.aggregate([{$match:{participant:{$in:[loggedInUser?._id]}}}]);
+  const allgroup = await groupconversation.aggregate([{ $match: { participant: { $in: [loggedInUser?._id] } } }]);
 
-     res.status(200).json({allgroup:allgroup});
+  res.status(200).json({ allgroup: allgroup });
 });
 
-export const addparticipantingroup = asyncHandler(async(req,res)=>{
-    const {groupId,id} = req.body;
+export const addparticipantingroup = asyncHandler(async (req, res) => {
+  const { groupId, id } = req.body;
 
-    const existedUser = await user.findOne({_id:id});
+  const existedUser = await user.findOne({ _id: id });
 
-    if(!existedUser) throw new ApiError(400,"this user does not exist!");
+  if (!existedUser) throw new ApiError(400, "this user does not exist!");
 
-    const group = await groupconversation.findOne({_id:groupId});
+  const group = await groupconversation.findOne({ _id: groupId });
 
-    console.log("group1:",group);
+  console.log("group1:", group);
 
-    if(group.participant?.includes(id)){
-      throw new ApiError(400,"user already existed in group!");
-    }
-    
-    group.participant.push(id);
-    
-    console.log("group2:",group);
+  if (group.participant?.includes(id)) {
+    throw new ApiError(400, "user already existed in group!");
+  }
 
-    const userAdded = await group.save();
+  group.participant.push(id);
 
-    console.log("userAdded:",group, userAdded)
+  console.log("group2:", group);
 
-    if(!userAdded) throw new ApiError(500,"user not added in group, something went worng!");
+  const userAdded = await group.save();
 
-    res.status(201).json({message:"user added successfully!"});
-})  
+  console.log("userAdded:", group, userAdded)
 
-export const leaveGroup = asyncHandler(async(req,res)=>{
-   const {groupId,id} = req.body;
+  if (!userAdded) throw new ApiError(500, "user not added in group, something went worng!");
 
-    const existedUser = await user.findOne({_id:id});
+  res.status(201).json({ message: "user added successfully!" });
+})
 
-    if(!existedUser) throw new ApiError(400,"this user does not exist!");
+export const leaveGroup = asyncHandler(async (req, res) => {
+  const { groupId, id } = req.body;
 
-    const group = await groupconversation.findOne({_id:groupId});
+  const existedUser = await user.findOne({ _id: id });
 
-    if(!(group.participant?.includes(id))){
-      throw new ApiError(400,"user does not exist in this group!");
-    }
-    
-    const updateParticipant = group.participant?.filter((item)=> !item.equals(id));
+  if (!existedUser) throw new ApiError(400, "this user does not exist!");
 
-    group.participant = [...updateParticipant];
-    
-    console.log("group2:",updateParticipant);
+  const group = await groupconversation.findOne({ _id: groupId });
 
-    const userAdded = await group.save();
+  if (!(group.participant?.includes(id))) {
+    throw new ApiError(400, "user does not exist in this group!");
+  }
 
-    if(!userAdded) throw new ApiError(500,"something went worng, while leaving group!");
+  const updateParticipant = group.participant?.filter((item) => !item.equals(id));
 
-    res.status(201).json({message:"user leaved the group successfully!"});
+  group.participant = [...updateParticipant];
+
+  console.log("group2:", updateParticipant);
+
+  const userAdded = await group.save();
+
+  if (!userAdded) throw new ApiError(500, "something went worng, while leaving group!");
+
+  res.status(201).json({ message: "user leaved the group successfully!" });
 });
 
 export const getUserChat = asyncHandler(async (req, res) => {
@@ -146,20 +147,24 @@ export const getUserChat = asyncHandler(async (req, res) => {
 
   console.log(userId);
 
-  if(!userId){
-   return errorHandler(res, 400, false, "User ID is required to get chat!");
+  if (!userId) {
+    return errorHandler(res, 400, false, "User ID is required to get chat!");
   }
 
+  const customRoom = await twouserconversation.findOne({ participant: { $all: [loggedInUser._id, userId] } });
+
   const userChat = await message.find({
-    $or:[
-      {senderId: loggedInUser._id, receiverId: userId},
-      {senderId: userId, receiverId: loggedInUser._id}
+    $or: [
+      { senderId: loggedInUser._id, receiverId: userId },
+      { senderId: userId, receiverId: loggedInUser._id }
     ]
   }).sort({ createdAt: 1 })
+
+
 
   if (!userChat || userChat.length === 0) {
     return res.status(200).json({ message: "No chat found with this user!" });
   }
 
-  res.status(200).json({ data: userChat });
+  res.status(200).json({ data: userChat, roomId: customRoom?.roomId });
 })
