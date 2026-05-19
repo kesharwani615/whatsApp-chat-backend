@@ -59,6 +59,18 @@ io.on("connection", async (socket) => {
 
         await createConversation.save();
       }
+
+      // Mark all unread messages received by current user in this conversation as "read"!
+      await message.updateMany(
+        { senderId: roomId, receiverId: user._id, status: { $ne: "read" } },
+        { $set: { status: "read" } }
+      );
+
+      // Notify the other user that their messages were read
+      const otherUserSocket = userSocketMap.get(roomId);
+      if (otherUserSocket) {
+        io.to(otherUserSocket).emit("messagesRead", { roomId: user._id });
+      }
     } else if (type === "group") {
       const existedGroup = await groupconversation.findOne({ roomId: roomId });
 
@@ -87,18 +99,24 @@ io.on("connection", async (socket) => {
 
     console.log("existedConversation", existedConversation);
 
+    // Determine real-time status dynamically based on receiver socket online status and active chat room status
+    const receiverSocketId = userSocketMap.get(roomId);
+    let status = "sent";
+    if (receiverSocketId) {
+      const receiverSocket = io.sockets.sockets.get(receiverSocketId);
+      if (receiverSocket && receiverSocket.rooms.has(customRoom)) {
+        status = "read";
+      } else {
+        status = "delivered";
+      }
+    }
+
     const createdMessage = await message.create({
       senderId: user?._id,
       receiverId: roomId,
       message: usermessage,
+      status: status,
     });
-
-    const receiverSocket = userSocketMap.get(roomId);
-    if (receiverSocket) {
-      await message.findByIdAndUpdate(createdMessage._id, { status: "delivered" });
-    } else if (createdMessage._id) {
-      await message.findByIdAndUpdate(createdMessage._id, { status: "sent" });
-    }
 
     console.log("createdMessage", createdMessage);
     if (!existedConversation?.message) {

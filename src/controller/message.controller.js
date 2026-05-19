@@ -151,6 +151,12 @@ export const getUserChat = asyncHandler(async (req, res) => {
     return errorHandler(res, 400, false, "User ID is required to get chat!");
   }
 
+  // Update status to read for any unread messages received by the loggedInUser from this sender
+  await message.updateMany(
+    { senderId: userId, receiverId: loggedInUser._id, status: { $ne: "read" } },
+    { $set: { status: "read" } }
+  );
+
   const customRoom = await twouserconversation.findOne({ participant: { $all: [loggedInUser._id, userId] } });
 
   const userChat = await message.find({
